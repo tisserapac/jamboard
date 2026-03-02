@@ -13,14 +13,16 @@ function createWindow(): void {
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    show: false,
     title: 'Jamboard',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false
     }
   })
 
   mainWindow.on('ready-to-show', () => {
+    mainWindow?.maximize()
     mainWindow?.show()
   })
 

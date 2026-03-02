@@ -88,7 +88,7 @@ function BoardPage({ boardId, onBack }: BoardPageProps): JSX.Element {
         <Toolbar />
 
         {/* Canvas */}
-        <div className="flex-1 flex items-center justify-center overflow-hidden bg-gray-200 p-4">
+        <div className="flex-1 overflow-hidden bg-gray-200">
           {activeFrame ? (
             <WhiteboardCanvas
               key={activeFrame.id}

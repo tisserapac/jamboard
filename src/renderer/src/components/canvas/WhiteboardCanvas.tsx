@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import * as fabric from 'fabric'
 import { useToolStore, STICKY_COLORS } from '../../stores/toolStore'
 import type { Frame } from '../../stores/boardStore'
@@ -8,17 +8,39 @@ interface WhiteboardCanvasProps {
   onCanvasChange: (canvasJson: string) => void
 }
 
-const CANVAS_WIDTH = 960
-const CANVAS_HEIGHT = 540
-
 function WhiteboardCanvas({ frame, onCanvasChange }: WhiteboardCanvasProps): JSX.Element {
+  const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<fabric.Canvas | null>(null)
   const isLoadingRef = useRef(false)
   const undoStackRef = useRef<string[]>([])
   const redoStackRef = useRef<string[]>([])
+  const [canvasSize, setCanvasSize] = useState({ width: 960, height: 540 })
 
   const { activeTool, color, brushSize, shapeType } = useToolStore()
+
+  // Track container size
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect
+      if (width > 0 && height > 0) {
+        setCanvasSize({ width: Math.floor(width), height: Math.floor(height) })
+      }
+    })
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
+
+  // Resize fabric canvas when container size changes
+  useEffect(() => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    canvas.setDimensions({ width: canvasSize.width, height: canvasSize.height })
+    canvas.renderAll()
+  }, [canvasSize])
 
   // Notify parent of changes
   const emitChange = useCallback(() => {
@@ -40,9 +62,13 @@ function WhiteboardCanvas({ frame, onCanvasChange }: WhiteboardCanvasProps): JSX
   useEffect(() => {
     if (!canvasRef.current) return
 
+    const container = containerRef.current
+    const initWidth = container ? Math.floor(container.clientWidth) : canvasSize.width
+    const initHeight = container ? Math.floor(container.clientHeight) : canvasSize.height
+
     const canvas = new fabric.Canvas(canvasRef.current, {
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
+      width: initWidth,
+      height: initHeight,
       backgroundColor: frame.background_color || '#FFFFFF',
       selection: true
     })
@@ -226,7 +252,7 @@ function WhiteboardCanvas({ frame, onCanvasChange }: WhiteboardCanvasProps): JSX
   }, [saveUndoState, emitChange])
 
   return (
-    <div className="shadow-lg rounded-lg overflow-hidden">
+    <div ref={containerRef} className="w-full h-full shadow-lg rounded-lg overflow-hidden">
       <canvas ref={canvasRef} />
     </div>
   )
